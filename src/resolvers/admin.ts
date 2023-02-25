@@ -298,8 +298,12 @@ export class AdminResolver {
   async players(
     @Ctx() { em }: MyContext,
   ): Promise<Players> {
-    const activePlayers = await em.find(User, { role: Role.PLAYER, banned: false });
-    const bannedPlayers = await em.find(User, { role: Role.PLAYER, banned: true });
+    const activePlayers = await em.find(User, { role: Role.PLAYER, banned: false }, {
+      populate: ['Wallet'],
+    });
+    const bannedPlayers = await em.find(User, { role: Role.PLAYER, banned: true }, {
+      populate: ['Wallet'],
+    });
 
     return {
       activePlayers: activePlayers,

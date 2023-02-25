@@ -161,13 +161,14 @@ export class UserResolver {
     })
 
     const challenges = await em.find(Challenge, {
-      $or: [
+      $and: [
         {
           mode: Mode.OPEN,
           status: Status.PENDING
         },
       ]
     }, { orderBy: [{ createdAt: QueryOrder.ASC }] });
+
     const games = await em.find(Game, {});
 
 
