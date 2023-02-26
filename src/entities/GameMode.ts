@@ -9,7 +9,7 @@ export class GameMode {
   @PrimaryKey()
   id: number;
 
-  @Field(() => Game)
+  @Field(() => Game,{nullable:true})
   @ManyToOne(() => Game)
   Game: Game;
 
