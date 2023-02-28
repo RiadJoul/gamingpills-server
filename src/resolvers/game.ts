@@ -14,7 +14,11 @@ import { Admin } from "../middelware/Admin";
 import { GeneralResponse } from "./Responses/General/GeneralResponse";
 import { GameMode } from "../entities/GameMode";
 import { wrap } from "@mikro-orm/core"
-
+import { FileUpload } from "graphql-upload";
+import path from "path";
+import { SERVER } from "../constants";
+import { createWriteStream } from "fs";
+const GraphQLUpload = require('graphql-upload/GraphQLUpload.js');
 
 @Resolver()
 export class GameResolver {
@@ -55,6 +59,7 @@ export class GameResolver {
     @Arg("gameId") gameId: number,
     @Arg("active") active: boolean,
     @Arg("name") name: string,
+    @Arg("file", () => GraphQLUpload) file: FileUpload,
   ): Promise<GeneralResponse> {
     const game = await em.findOne(Game, { id: gameId });
     if (!game) {
@@ -64,11 +69,37 @@ export class GameResolver {
         ]
       }
     }
-    wrap(game).assign({
-      active: active,
-      name: name,
-    })
-    return { success: true };
+
+    const { createReadStream, filename } = file;
+
+    var ext = path.extname(filename || '').split('.');
+    const fileType = ext[ext.length - 1];
+    if (fileType != 'gif' && fileType != 'jpeg' && fileType != 'png' && fileType != 'jpg') {
+      return { errors: [{ field: 'Error', message: 'This is not a valid file, please upload a png, jpeg or a gif file' }] }
+    }
+    
+    try {
+      await new Promise(res =>
+        createReadStream()
+          .pipe(createWriteStream(path.join(__dirname, "../public/images/games", game.id.toString())))
+          .on("close", res)
+      );
+
+
+      wrap(game).assign({
+        active: active,
+        name: name,
+        cover: SERVER + '/images/games/' + game.id
+      })
+    }
+
+    catch (err) {
+      return {
+        errors: [{ field: 'Error', message: 'An Error has occured please try again later' }]
+      }
+    }
+    return { success: true }
+
   }
 
   @Mutation(() => GeneralResponse)

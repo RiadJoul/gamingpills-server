@@ -437,6 +437,7 @@ export class UserResolver {
     if (fileType != 'gif' && fileType != 'jpeg' && fileType != 'png' && fileType != 'jpg') {
       return { errors: [{ field: 'Error', message: 'This is not a valid file, please upload a png, jpeg or a gif file' }] }
     }
+    
     const user = await em.findOne(User, { id: req.session.userId })
     const id = uuidv4();
 
