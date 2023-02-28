@@ -331,7 +331,7 @@ export class UserResolver {
           {
             field: "Password",
             message:
-              "Your password should have atleast 8 characters, one letter and one number",
+              "Your password should have atleast 8 characters",
           },
         ],
       };
