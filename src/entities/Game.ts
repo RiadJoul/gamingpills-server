@@ -29,7 +29,7 @@ export class Game {
 
   @Field(() => [GameMode],{nullable:true})
   @OneToMany(() => GameMode,(mode) => mode.Game)
-  gameModes!: [GameMode];
+  gameModes!: [GameMode]; 
 
   
   @Field(() => Date , { nullable: true })

@@ -37,7 +37,10 @@ export class GameResolver {
 
   @Query(() => [Game], { nullable: true })
   async games(@Ctx() { em }: MyContext): Promise<any> {
-    return await em.find(Game, {})
+    const games = await em.find(Game, {}, {
+      populate: ['gameModes'],
+    });
+    return games;
   }
 
   @Query(() => [GameMode], { nullable: true })
