@@ -7,7 +7,7 @@ TODO: Documentation make a good documentation on how everything is working
     subscriptions,
     payments,
     how to generate env variables, 
-    generate graphql, 
+    generate graphql schemas, 
     schedulers ....)
 
 
