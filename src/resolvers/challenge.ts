@@ -353,7 +353,7 @@ export class ChallengeResolver {
       type: Type.POSITIVE,
       user: challenge.homePlayer,
       amount: challenge.bet,
-      description: challenge.game.name + "Challenge Cancellation",
+      description: challenge.game.name + " Challenge Cancellation",
     } as Transaction);
     await em.persistAndFlush(transaction);
     return { success: true };
@@ -396,7 +396,7 @@ export class ChallengeResolver {
       type: Type.POSITIVE,
       user: challenge.homePlayer,
       amount: challenge.bet,
-      description: challenge.game.name + "Challenge Cancellation",
+      description: challenge.game.name + " Challenge Cancellation",
     } as Transaction);
     await em.persistAndFlush(transaction);
 
@@ -504,7 +504,7 @@ export class ChallengeResolver {
           type: Type.POSITIVE,
           user: challenge.awayPlayer,
           amount: challenge.bet,
-          description: challenge.game + " tie",
+          description: challenge.game.name + " tie",
         } as Transaction);
         await em.persistAndFlush(secondtransaction);
       }
