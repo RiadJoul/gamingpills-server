@@ -383,33 +383,19 @@ export class UserResolver {
   }
 
 
-  @Mutation(() => GeneralResponse)
+  @Mutation(() => User || null)
   async login(
     @Arg("username") username: string,
     @Arg("password") password: string,
     @Ctx() { em, req }: any
-  ): Promise<GeneralResponse> {
+  ): Promise<User | null> {
     const user: User = await em.findOne(User, { username: username });
     if (!user) {
-      return {
-        errors: [
-          {
-            field: "Username",
-            message: "this username doesn't exist",
-          },
-        ],
-      };
+      return null;
     }
     const valid = await argon2.verify(user.password, password);
     if (!valid) {
-      return {
-        errors: [
-          {
-            field: "password",
-            message: "incorrect password",
-          },
-        ],
-      };
+      return null;
     }
     // store user id in session with redis
     req.session.userId = user.id;
@@ -417,9 +403,7 @@ export class UserResolver {
     wrap(user).assign({
       lastSeen: new Date(),
     });
-    return {
-      success: true,
-    };
+    return user;
   }
 
 
