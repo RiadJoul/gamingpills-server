@@ -37,6 +37,7 @@ import { sendEmail } from "../utils/EmailSender";
 import { UserStats } from "./Responses/UserStats";
 import { Role } from "../enums/Roles";
 import { Admin } from "../middelware/Admin";
+import { SignUpResponse } from "./Responses/SignUpResponse";
 const GraphQLUpload = require('graphql-upload/GraphQLUpload.js');
 
 
@@ -241,7 +242,7 @@ export class UserResolver {
   }
 
 
-  @Mutation(() => GeneralResponse)
+  @Mutation(() => SignUpResponse)
   async register(
     @Arg("username") username: string,
     @Arg("firstName") firstName: string,
@@ -250,7 +251,7 @@ export class UserResolver {
     @Arg("password") password: string,
     @Arg("birthDate") birthDate: Date,
     @Ctx() { req, em }: MyContext
-  ): Promise<GeneralResponse> {
+  ): Promise<SignUpResponse> {
     const min = 3;
     const max = 16;
 
@@ -377,9 +378,7 @@ export class UserResolver {
 
     req.session.userId = user.id;
 
-    return {
-      success: true,
-    };
+    return {user};
   }
 
 
