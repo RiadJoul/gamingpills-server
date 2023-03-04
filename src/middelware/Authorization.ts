@@ -13,8 +13,8 @@ export const Authorization: MiddlewareFn<MyContext> = async (
     return {
       errors: [
         {
-          field: "Not authorized",
-          message: "You account is banned",
+          field: "You account is banned",
+          message: "Contact support for more information",
         },
       ],
     };
