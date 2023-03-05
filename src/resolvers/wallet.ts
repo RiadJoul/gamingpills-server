@@ -22,17 +22,6 @@ import { CLIENT } from "../constants";
 
 @Resolver()
 export class WalletResolver {
-  //GET user wallet
-  //TODO: Remove this because we can get the balance
-  // from the auhtenticated user query so this is useless
-  @UseMiddleware(Authentication)
-  @Query(() => Wallet, { nullable: true })
-  async wallet(@Ctx() { req, em }: MyContext) {
-    const user = await em.findOne(User, { id: req.session.userId });
-    const wallet = await em.findOne(Wallet, { user: user });
-    return wallet;
-  }
-
   
   @UseMiddleware(Authentication)
   @Mutation(() => GeneralResponse)

@@ -3,6 +3,7 @@ import { Role } from "../enums/Roles";
 import { Field, ObjectType } from "type-graphql";
 import { Challenge } from "./Challenge";
 import { Wallet } from "./Wallet";
+import { Message } from "./Message";
 
 @ObjectType()
 @Entity()
@@ -65,6 +66,10 @@ export class User {
     { nullable: true }
   )
   Challenges: Challenge[];
+
+
+  @OneToMany(() => Message, (message) => message.user)
+  messages: Message[];
 
   @Field(() => Wallet,{nullable:true})
   @OneToOne(

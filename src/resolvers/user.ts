@@ -219,7 +219,9 @@ export class UserResolver {
   @UseMiddleware(Authentication)
   async AuthenticatedUser(@Ctx() { req, em }: MyContext,
   ) {
-    const user = await em.findOne(User, { id: req.session.userId });
+    const user = await em.findOne(User, { id: req.session.userId }, {
+      populate: ['Wallet'],
+    });
     return user;
   }
 
@@ -720,6 +722,7 @@ export class UserResolver {
     } as any);
   }
 
+  //TODO: put this in a seperate resolver
   @Subscription({
     topics: "NOTIFICATIONS",
     filter: ({ payload, context }) => payload.userId.includes(context),
