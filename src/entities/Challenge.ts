@@ -1,4 +1,4 @@
-import { Entity, Enum, ManyToMany, ManyToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import { Entity, Enum, ManyToOne, PrimaryKey, Property } from "@mikro-orm/core";
 import { Mode, Platform, Status } from "../enums/Challenge";
 import { Field, ObjectType } from "type-graphql";
 import { User } from "./User";

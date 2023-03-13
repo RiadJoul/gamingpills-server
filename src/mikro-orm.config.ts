@@ -8,6 +8,7 @@ import { Wallet } from "./entities/Wallet";
 import { Scores } from "./entities/Scores";
 import { Transaction } from "./entities/Transaction";
 import { Message } from "./entities/Message";
+import { Conversation } from "./entities/Conversation";
 
 const config: Options = {
   allowGlobalContext: true,
@@ -16,7 +17,7 @@ const config: Options = {
     pathTs: path.join(__dirname, "./migrations"),
     glob: "!(*.d).{js,ts}",
   },
-  entities: [User, Challenge, Game, Wallet, Scores, Transaction,Message],
+  entities: [User, Challenge, Game, Wallet, Scores, Transaction, Conversation, Message],
   dbName: process.env.DATABASE_NAME,
   type: "postgresql",
   user: process.env.DATABASE_USER,

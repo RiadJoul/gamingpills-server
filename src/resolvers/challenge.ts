@@ -30,6 +30,7 @@ import { Game } from "../entities/Game";
 import { GameMode } from "../entities/GameMode";
 import { sendEmail } from "../utils/EmailSender";
 import { CLIENT } from "../constants";
+import { Conversation } from "../entities/Conversation";
 
 
 @Resolver()
@@ -119,7 +120,6 @@ export class ChallengeResolver {
       bet: input.bet,
       comment: input.comment,
     } as any);
-    console.log(challenge)
     await em.persistAndFlush(challenge);
 
     if (awayPlayer) {
@@ -208,6 +208,17 @@ export class ChallengeResolver {
       status: ChallengeStatus.ACTIVE,
       awayPlayer: user,
     });
+
+    const conversation = em.create(Conversation, { 
+      id: id,
+      members: [challenge.homePlayer, challenge.homePlayer],
+      public:false
+    });
+
+    em.persistAndFlush(conversation)
+
+    console.log(conversation)
+
     //Notification
     await publish({userId:challenge.homePlayer.id,title:"Challenge Accepted","message":`${user!.username} has accepted you challenge`,createdAt:new Date()})
     //send Email

@@ -23,6 +23,7 @@ import { ApolloServerPluginDrainHttpServer } from "apollo-server-core/dist/plugi
 import { AdminResolver } from './resolvers/admin';
 import { challengeScheduler } from './schedulers/challengeScheduler';
 import { User } from './entities/User';
+import { ConversationResolver } from './resolvers/conversation';
 
 
 const main = async () => {
@@ -65,6 +66,7 @@ const main = async () => {
       ChallengeResolver,
       GameResolver,
       WalletResolver,
+      ConversationResolver
     ],
     validate: false,
   })

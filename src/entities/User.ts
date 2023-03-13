@@ -68,7 +68,11 @@ export class User {
   Challenges: Challenge[];
 
 
-  @OneToMany(() => Message, (message) => message.user)
+  @OneToMany(
+    () => Message,
+    (message) => message.user,
+    { nullable: true }
+  )
   messages: Message[];
 
   @Field(() => Wallet,{nullable:true})

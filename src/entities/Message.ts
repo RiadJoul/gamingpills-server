@@ -1,19 +1,26 @@
-import { Entity, PrimaryKey, Property, ManyToOne } from "@mikro-orm/core";
-import { ObjectType, Field } from "type-graphql";
-import { User } from "./User";
-
+import { ObjectType, Field } from 'type-graphql';
+import { User } from './User';
+import { Conversation } from './Conversation';
+import { Entity, ManyToOne, PrimaryKey } from '@mikro-orm/core';
 
 @ObjectType()
 @Entity()
 export class Message {
-    @Field()
-    @PrimaryKey()
-    id: number;
+  @Field()
+  @PrimaryKey()
+  id: number;
 
-    @ManyToOne(() => User)
-    user: User;
+  @Field(() => Conversation)
+  @ManyToOne(() => Conversation,{nullable:true})
+  conversation?: Conversation;
 
-    @Field(() => String)
-    @Property({ type: "text"})
-    text: string;
+  @Field(() => User)
+  @ManyToOne(() => User)
+  user: User;
+
+  @Field()
+  content: string;
+
+  @Field()
+  createdAt: Date;
 }
