@@ -539,7 +539,7 @@
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
-          "nullable": false,
+          "nullable": true,
           "mappedType": "text"
         },
         "user_id": {
@@ -550,6 +550,25 @@
           "primary": false,
           "nullable": false,
           "mappedType": "text"
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "text"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(0)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "length": 6,
+          "mappedType": "datetime"
         }
       },
       "name": "message",
@@ -577,6 +596,7 @@
             "id"
           ],
           "referencedTableName": "public.conversation",
+          "deleteRule": "set null",
           "updateRule": "cascade"
         },
         "message_user_id_foreign": {

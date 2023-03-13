@@ -1,12 +1,14 @@
 import { ObjectType, Field } from 'type-graphql';
 import { User } from './User';
 import { Conversation } from './Conversation';
-import { Entity, ManyToOne, PrimaryKey } from '@mikro-orm/core';
+import { Entity, ManyToOne, PrimaryKey, Property } from '@mikro-orm/core';
 
 @ObjectType()
 @Entity()
 export class Message {
-  @Field()
+  @Field(
+    {nullable:true}
+  )
   @PrimaryKey()
   id: number;
 
@@ -19,8 +21,10 @@ export class Message {
   user: User;
 
   @Field()
+  @Property({ type: "text"})
   content: string;
 
-  @Field()
-  createdAt: Date;
+  @Field(() => Date, { nullable: true })
+  @Property({ type: "date" })
+  createdAt: Date = new Date();
 }

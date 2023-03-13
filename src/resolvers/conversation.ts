@@ -24,18 +24,23 @@ export class ConversationResolver {
     })
     newMessage
         (@Root() messagePayload: Message): Message {
-        return { id: messagePayload.id, user: messagePayload.user, content: messagePayload.content, createdAt: new Date() }
+        return { 
+            id: messagePayload.id, 
+            user: messagePayload.user, 
+            content: messagePayload.content, 
+            createdAt: new Date() 
+        }
     }
 
     @Mutation(() => GeneralResponse)
     @UseMiddleware(Authentication)
     @UseMiddleware(Authorization)
     async sendMessage(
-        @Arg('id') id: string,
+        @Arg('id', { nullable: true }) id: string,
         @Arg('content') content: string,
         @PubSub("MESSAGES") publish: Publisher<Message>,
         @Ctx() { em, req }: MyContext): Promise<GeneralResponse> {
-        const user = await em.findOne(User,{id:req.session.userId})
+        const user = await em.findOne(User, { id: req.session.userId })
         //TODO: message verification ( check for abusive language etc...)
 
         //check if the message is for public or a private challenges
@@ -51,36 +56,35 @@ export class ConversationResolver {
             //send message to that challenge conversation
             const message: Message = em.create(Message, {
                 conversation: conversation,
-                user: em.getReference(User, req.session.userId),
+                user: user!,
                 content: content
             } as any)
             em.persistAndFlush(message)
             // Publish a newMessage event to the WebSocket server
             await publish({
-                id:message.id,
                 user: user!,
                 content: content,
                 createdAt: message.createdAt
             })
+
+  
         }
 
         //send message to public conversation
-            const message: Message = em.create(Message, {
-                user: em.getReference(User, req.session.userId),
-                content: content,
-                public: true
-            } as any)
-            em.persistAndFlush(message)
+        const message: Message = em.create(Message, {
+            user: em.getReference(User, req.session.userId),
+            content: content,
+            public: true
+        } as any)
+        em.persistAndFlush(message)
 
         // Publish a newMessage event to the WebSocket server
-        // Publish a newMessage event to the WebSocket server
         await publish({
-            id:message.id,
             user: user!,
             content: content,
             createdAt: message.createdAt
         })
-
+    
         return { success: true };
     }
 
