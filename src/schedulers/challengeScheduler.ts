@@ -14,7 +14,7 @@ export const challengeScheduler = (em:EntityManager<any> & EntityManager<IDataba
   // scheduled for every 5 seconds
   schedule.scheduleJob('0-59/5 * * * * *',async function(){
     //check for pending challenges that had been 5 minutes ago
-    console.log("CHECKING FOR EXPIRED CHALLENGES")
+    // console.log("CHECKING FOR EXPIRED CHALLENGES")
     checkExpiredChallenges(em);
   });
 
@@ -22,14 +22,14 @@ export const challengeScheduler = (em:EntityManager<any> & EntityManager<IDataba
   // scheduled for every 15 seconds
   schedule.scheduleJob('0-59/15 * * * * *',async function(){
     //check for active challenges that only player uploaded the score
-    console.log("CHECKING FOR PLAYERS WHO DID NOT UPLOAD SCORE")
+    // console.log("CHECKING FOR PLAYERS WHO DID NOT UPLOAD SCORE")
     checkUploadedScores(em);
   });
 
   //scheduled for every 5 minutes
   schedule.scheduleJob("*/5 * * * *", function() {
     //check for active challenges that hasnt been played for 2 hours
-    console.log("CHECK FOR INACTIVE ACTIVE CHALLENGES")
+    // console.log("CHECK FOR INACTIVE ACTIVE CHALLENGES")
     checkInactiveActiveChallenges(em);
 });
 }

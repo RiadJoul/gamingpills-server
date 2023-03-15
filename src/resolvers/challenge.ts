@@ -209,12 +209,12 @@ export class ChallengeResolver {
       awayPlayer: user,
     });
 
-    const conversation = em.create(Conversation, { 
+    const conversation = em.create(Conversation, {
       id: id,
-      members: [challenge.homePlayer, challenge.homePlayer],
-      public:false
+      public: false,
+      members: [challenge.homePlayer,challenge.awayPlayer!]
     });
-
+    await em.populate(conversation, ['members']);
     em.persistAndFlush(conversation)
 
     console.log(conversation)

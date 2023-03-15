@@ -6,14 +6,12 @@ import { Entity, ManyToOne, PrimaryKey, Property } from '@mikro-orm/core';
 @ObjectType()
 @Entity()
 export class Message {
-  @Field(
-    {nullable:true}
-  )
-  @PrimaryKey()
-  id: number;
+  @Field(() => String)
+  @PrimaryKey({ type: "text", unique: true, autoincrement: false })
+  id: string;
 
   @Field(() => Conversation)
-  @ManyToOne(() => Conversation,{nullable:true})
+  @ManyToOne(() => Conversation)
   conversation?: Conversation;
 
   @Field(() => User)
@@ -26,5 +24,5 @@ export class Message {
 
   @Field(() => Date, { nullable: true })
   @Property({ type: "date" })
-  createdAt: Date = new Date();
+  createdAt?: Date = new Date();
 }

@@ -5,9 +5,8 @@ import { Arg, Ctx, Mutation, Publisher, PubSub, Query, Resolver, Root, Subscript
 import { MyContext } from "../types";
 import { Authentication } from "../middelware/Authentication";
 import { GeneralResponse } from "./Responses/General/GeneralResponse";
-import { Challenge } from "../entities/Challenge";
 import { Authorization } from "../middelware/Authorization";
-
+import { v4 as uuidv4 } from "uuid";
 
 
 
@@ -16,19 +15,33 @@ import { Authorization } from "../middelware/Authorization";
 export class ConversationResolver {
 
     @Subscription({
-        topics: "MESSAGES",
-        // filter: ({ payload, context }) => {
-        //     // Only broadcast the message if the user is a member of the conversation
-        //     return payload.message.conversation.members.some((member: User) => member.id === context.userId);
-        // },
+        topics: "PUBLIC_MESSAGES",
+
     })
-    newMessage
+    newPublicMessage
         (@Root() messagePayload: Message): Message {
-        return { 
-            id: messagePayload.id, 
-            user: messagePayload.user, 
-            content: messagePayload.content, 
-            createdAt: new Date() 
+        return {
+            id: messagePayload.id,
+            user: messagePayload.user,
+            content: messagePayload.content,
+            createdAt: new Date()
+        }
+    }
+
+    @Subscription({
+        topics: "PRIVATE_MESSAGES",
+        filter: ({ payload, context }) => {
+            // Only broadcast the message if the user is a member of the conversation
+            return payload.conversation.members.toArray().some((member: User) => member.id.includes(context));
+        },
+    })
+    newPrivateMessage
+        (@Root() messagePayload: Message): Message {
+        return {
+            id: messagePayload.id,
+            user: messagePayload.user,
+            content: messagePayload.content,
+            createdAt: new Date()
         }
     }
 
@@ -38,10 +51,15 @@ export class ConversationResolver {
     async sendMessage(
         @Arg('id', { nullable: true }) id: string,
         @Arg('content') content: string,
-        @PubSub("MESSAGES") publish: Publisher<Message>,
+        @PubSub("PUBLIC_MESSAGES") publicMessagepublish: Publisher<Message>,
+        @PubSub("PRIVATE_MESSAGES") privateMessagepublish: Publisher<Message>,
         @Ctx() { em, req }: MyContext): Promise<GeneralResponse> {
         const user = await em.findOne(User, { id: req.session.userId })
         //TODO: message verification ( check for abusive language etc...)
+        do {
+            var uuid = uuidv4();
+            var idExists = await em.findOne(Message, { id: uuid });
+        } while (idExists);
 
         //check if the message is for public or a private challenges
         if (id) {
@@ -55,37 +73,40 @@ export class ConversationResolver {
 
             //send message to that challenge conversation
             const message: Message = em.create(Message, {
+                id: uuid,
                 conversation: conversation,
                 user: user!,
                 content: content
-            } as any)
+            } as Message)
             em.persistAndFlush(message)
             // Publish a newMessage event to the WebSocket server
-            await publish({
-                user: user!,
-                content: content,
-                createdAt: message.createdAt
-            })
+            await privateMessagepublish(message)
 
-  
+
+        } else {
+            //send message to public conversation
+            const message: Message = em.create(Message, {
+                id: uuid,
+                user: em.getReference(User, req.session.userId),
+                content: content
+            } as any)
+            em.persistAndFlush(message)
+
+            // Publish a newMessage event to the WebSocket server
+            await publicMessagepublish(message)
         }
 
-        //send message to public conversation
-        const message: Message = em.create(Message, {
-            user: em.getReference(User, req.session.userId),
-            content: content,
-            public: true
-        } as any)
-        em.persistAndFlush(message)
 
-        // Publish a newMessage event to the WebSocket server
-        await publish({
-            user: user!,
-            content: content,
-            createdAt: message.createdAt
-        })
-    
+
         return { success: true };
+    }
+
+
+    @Query(() => [Message])
+    @UseMiddleware(Authentication)
+    async getMessages(@Ctx() { em }: MyContext): Promise<Message[]> {
+        const messages = await em.find(Message, {})
+        return messages;
     }
 
     @Query(() => Conversation)
