@@ -7,6 +7,8 @@ import { Authentication } from "../middelware/Authentication";
 import { GeneralResponse } from "./Responses/General/GeneralResponse";
 import { Authorization } from "../middelware/Authorization";
 import { v4 as uuidv4 } from "uuid";
+import { QueryOrder } from "@mikro-orm/core";
+import { Limiter } from "../utils/MessageThrottleService";
 
 
 
@@ -45,6 +47,9 @@ export class ConversationResolver {
         }
     }
 
+    
+
+
     @Mutation(() => GeneralResponse)
     @UseMiddleware(Authentication)
     @UseMiddleware(Authorization)
@@ -55,7 +60,16 @@ export class ConversationResolver {
         @PubSub("PRIVATE_MESSAGES") privateMessagepublish: Publisher<Message>,
         @Ctx() { em, req }: MyContext): Promise<GeneralResponse> {
         const user = await em.findOne(User, { id: req.session.userId })
-        //TODO: message verification ( check for abusive language etc...)
+   
+        //limiter for spam protection
+        try {
+            await Limiter.consume(req.session.userId);
+        } catch (error) {
+            return {
+                errors: [{ field: "content", message: "You are sending messages too quickly. Please wait and try again." }],
+            };
+        }
+
         do {
             var uuid = uuidv4();
             var idExists = await em.findOne(Message, { id: uuid });
@@ -104,8 +118,20 @@ export class ConversationResolver {
 
     @Query(() => [Message])
     @UseMiddleware(Authentication)
-    async getMessages(@Ctx() { em }: MyContext): Promise<Message[]> {
-        const messages = await em.find(Message, {})
+    async publicMessages(@Ctx() { em }: MyContext): Promise<Message[]> {
+        const messages = await em.find(Message, { conversation: null }, { orderBy: [{ createdAt: QueryOrder.ASC }] })
+
+        return messages;
+    }
+
+    @Query(() => [Message])
+    @UseMiddleware(Authentication)
+
+    async privateMessages(
+        @Ctx() { em }: MyContext,
+        @Arg('id') id: string
+        ): Promise<Message[]> {
+        const messages = await em.find(Message, { conversation: { id:id} }, { orderBy: [{ createdAt: QueryOrder.ASC }] })
         return messages;
     }
 

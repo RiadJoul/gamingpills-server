@@ -12,3 +12,5 @@ export const VERIFY_EMAIL_PREFIX = 'verify-email'
 export const RESET_PASSWORD_EMAIL_PREFIX = 'reset-password'
 
 export const PLATFROM_FEE = 10
+
+export const MAX_MESSAGES_PER_10_SECONDS = 5;

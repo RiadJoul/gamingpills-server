@@ -36,7 +36,6 @@ export class GameResolver {
     await em.persistAndFlush(game);
     return { success: true };
   }
-  //TODO: upload game cover
 
 
   @Query(() => [Game], { nullable: true })

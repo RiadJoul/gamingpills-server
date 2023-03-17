@@ -11,7 +11,7 @@ export class Message {
   id: string;
 
   @Field(() => Conversation)
-  @ManyToOne(() => Conversation)
+  @ManyToOne(() => Conversation,{nullable:true})
   conversation?: Conversation;
 
   @Field(() => User)

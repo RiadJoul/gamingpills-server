@@ -15,6 +15,7 @@ export class Conversation {
   @ManyToMany(() => User)
   members: User[];
 
+  @Field(() => [Message])
   @OneToMany(() => Message,(message) => message.conversation)
   messages?: Message[];
 

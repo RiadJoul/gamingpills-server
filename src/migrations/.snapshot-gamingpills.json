@@ -548,7 +548,7 @@
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
-          "nullable": false,
+          "nullable": true,
           "mappedType": "text"
         },
         "user_id": {
@@ -605,6 +605,7 @@
             "id"
           ],
           "referencedTableName": "public.conversation",
+          "deleteRule": "set null",
           "updateRule": "cascade"
         },
         "message_user_id_foreign": {
