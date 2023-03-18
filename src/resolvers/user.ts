@@ -10,8 +10,6 @@ import {
   PubSub,
   Query,
   Resolver,
-  Root,
-  Subscription,
   UseMiddleware,
 } from "type-graphql";
 import { QueryOrder, wrap } from "@mikro-orm/core";
@@ -26,7 +24,7 @@ import { validateEmail } from "../utils/validateEmail";
 import { createWriteStream } from "fs";
 import { FileUpload } from "graphql-upload";
 import path from "path";
-import { Notification } from "../types/Notification";
+import { Notification } from "../entities/Notification";
 import { Challenge } from "../entities/Challenge";
 import { Mode, Status } from "../enums/Challenge";
 import { FeedResponse } from "./Responses/FeedResponse";
@@ -74,7 +72,7 @@ export class UserResolver {
       lastName: 'Joul',
       birthDate: "2000-09-06T14:56:15.000Z",
       email: "admin@gmail.com",
-      emailVerified:true,
+      emailVerified: true,
       password: hashedPassword,
     } as any);
     await em.persistAndFlush(admin);
@@ -86,9 +84,9 @@ export class UserResolver {
       firstName: 'Demo',
       lastName: 'User',
       birthDate: "2000-09-06T14:56:15.000Z",
-      psnId:"hamid",
+      psnId: "hamid",
       email: "riadjoul@gmail.com",
-      emailVerified:true,
+      emailVerified: true,
       password: hashedPassword,
     } as any);
     await em.persistAndFlush(user1);
@@ -99,10 +97,10 @@ export class UserResolver {
       username: 'user-2',
       firstName: 'Demo',
       lastName: 'User',
-      psnId:"hamid2",
+      psnId: "hamid2",
       birthDate: "2000-09-06T14:56:15.000Z",
       email: "joulriad@gmail.com",
-      emailVerified:true,
+      emailVerified: true,
       password: hashedPassword,
     } as any);
     await em.persistAndFlush(user2);
@@ -110,14 +108,14 @@ export class UserResolver {
     //creating a wallet
     const wallet1 = em.create(Wallet, {
       user: user1,
-      balance:10
+      balance: 10
     } as Wallet);
 
     await em.persistAndFlush(wallet1);
 
     const wallet2 = em.create(Wallet, {
       user: user2,
-      balance:10
+      balance: 10
     } as Wallet);
 
     await em.persistAndFlush(wallet2);
@@ -144,7 +142,7 @@ export class UserResolver {
       $ne: { id: req.session.userId },
     } as any);
 
-    const myChallenges =  await em.find(Challenge, {
+    const myChallenges = await em.find(Challenge, {
       $or: [
         {
           status: Status.PENDING,
@@ -380,7 +378,7 @@ export class UserResolver {
 
     req.session.userId = user.id;
 
-    return {user};
+    return { user };
   }
 
 
@@ -400,7 +398,7 @@ export class UserResolver {
     }
     // store user id in session with redis
     req.session.userId = user.id;
-    console.log(req.session)
+
     wrap(user).assign({
       lastSeen: new Date(),
     });
@@ -422,7 +420,7 @@ export class UserResolver {
     if (fileType != 'gif' && fileType != 'jpeg' && fileType != 'png' && fileType != 'jpg') {
       return { errors: [{ field: 'Error', message: 'This is not a valid file, please upload a png, jpeg or a gif file' }] }
     }
-    
+
     const user = await em.findOne(User, { id: req.session.userId })
     const id = uuidv4();
 
@@ -477,13 +475,13 @@ export class UserResolver {
 
   @Query(() => UserStats)
   @UseMiddleware(Authentication)
-  async playerStats (
-    @Arg("id") id:string,
-    @Ctx() {em} :MyContext
+  async playerStats(
+    @Arg("id") id: string,
+    @Ctx() { em }: MyContext
   ): Promise<UserStats | null> {
-    if(!id) return null;
-    const player = await em.findOne(User,{id:id})
-    if(!player) return null;
+    if (!id) return null;
+    const player = await em.findOne(User, { id: id })
+    if (!player) return null;
     const matches = await em.count(Challenge, {
       status: Status.FINISHED,
       $or: [
@@ -498,7 +496,7 @@ export class UserResolver {
         { homePlayer: player.id },
         { awayPlayer: player.id },
       ],
-      winner:player.id
+      winner: player.id
     });
 
     const losses = await em.count(Challenge, {
@@ -507,13 +505,13 @@ export class UserResolver {
         { homePlayer: player.id },
         { awayPlayer: player.id },
       ],
-      $not: {winner:player.id}
+      $not: { winner: player.id }
     });
 
     return {
-      matches:matches,
-      wins:wins,
-      losses:losses
+      matches: matches,
+      wins: wins,
+      losses: losses
     }
   }
 
@@ -529,7 +527,7 @@ export class UserResolver {
     const token = generateString(20).toUpperCase();
     //store the token in redis for verification
     redis.set(VERIFY_EMAIL_PREFIX + token, user!.id, 'EX', 7200); //expires in 1 hour
-    await sendEmail(user!,'Verify Account Email','Click on the button below to verify your email','Verify Email',`${CLIENT}/${VERIFY_EMAIL_PREFIX}/${token}`)
+    await sendEmail(user!, 'Verify Account Email', 'Click on the button below to verify your email', 'Verify Email', `${CLIENT}/${VERIFY_EMAIL_PREFIX}/${token}`)
     return { success: true }
   }
 
@@ -562,7 +560,15 @@ export class UserResolver {
     wrap(user).assign({
       emailVerified: true
     });
-    await publish({title:"Email",message:"Your email has been verified",createdAt:new Date()})
+    const notification: Notification = em.create(Notification, {
+      user: user,
+      title: "Email",
+      message: "Your email has been verified"
+    } as Notification)
+    em.persistAndFlush(notification)
+    // Publish event to the WebSoc
+    await publish(notification)
+
     return { success: true }
   }
 
@@ -590,7 +596,7 @@ export class UserResolver {
     const token = generateString(20).toUpperCase();
     //store the token in redis for verification
     redis.set(RESET_PASSWORD_EMAIL_PREFIX + token, user!.id, 'EX', 7200); //expires in 1 hour
-    await sendEmail(user,'Reset your password','You can reset your password with the following link. <br/> if you did not request a password reset ignore this email.','Reset Password',`${CLIENT}/${RESET_PASSWORD_EMAIL_PREFIX}/${token}`)
+    await sendEmail(user, 'Reset your password', 'You can reset your password with the following link. <br/> if you did not request a password reset ignore this email.', 'Reset Password', `${CLIENT}/${RESET_PASSWORD_EMAIL_PREFIX}/${token}`)
     return { success: true }
   }
 
@@ -722,13 +728,4 @@ export class UserResolver {
     } as any);
   }
 
-  //TODO: put this in a seperate resolver
-  @Subscription({
-    topics: "NOTIFICATIONS",
-    filter: ({ payload, context }) => payload.userId.includes(context),
-  })
-  newNotification
-  (@Root() notificationPayload: Notification): Notification {
-      return {title:notificationPayload.title,message:notificationPayload.message,createdAt:new Date()}
-  }
 }

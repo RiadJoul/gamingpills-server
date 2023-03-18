@@ -23,7 +23,7 @@ import { Transaction } from "../entities/Transaction";
 import { Status as TransactionStatus, Type } from "../enums/Transaction";
 import { User } from "../entities/User";
 import { calculateProfit } from "../utils/fee";
-import { Notification } from "../types/Notification";
+import { Notification } from "../entities/Notification";
 import { sendEmail } from "../utils/EmailSender";
 import { Players } from "./Responses/Players";
 import { Role } from "../enums/Roles";
@@ -219,8 +219,25 @@ export class AdminResolver {
     }
 
     //Notifications
-    await publish({ userId: challenge.homePlayer.id, title: "Challenge", message: "challenge has been cancelled by an admin", createdAt: new Date() })
-    await publish({ userId: challenge.homePlayer.id, title: "Challenge", message: "challenge has been cancelled by an admin", createdAt: new Date() })
+    const notification1: Notification = em.create(Notification, {
+        user:challenge.homePlayer,
+        title: "Challenge",
+        message: "challenge has been cancelled by an admin"
+    } as Notification)
+    em.persistAndFlush(notification1)
+    // Publish event to the WebSocket server
+    await publish(notification1)
+
+    const notification2: Notification = em.create(Notification, {
+        user:challenge.awayPlayer,
+        title: "Challenge",
+        message: "challenge has been cancelled by an admin"
+    } as Notification)
+    em.persistAndFlush(notification2)
+    // Publish event to the WebSocket server
+    await publish(notification2)  
+    
+
     //Email notifications
     sendEmail(challenge.homePlayer, 'Challenge cancelled', "The challenge has been cancelled by an admin", "Go to gamingpills", `https://${CLIENT}/player/feed`)
     return {
@@ -280,10 +297,27 @@ export class AdminResolver {
     await em.persistAndFlush(transaction);
 
     //Notifications
-    await publish({ userId: challenge.homePlayer.id, title: "Challenge", message: "challenge has been resolved by an admin", createdAt: new Date() })
-    await publish({ userId: challenge.homePlayer.id, title: "Challenge", message: "challenge has been resolved by an admin", createdAt: new Date() })
+    const notification1: Notification = em.create(Notification, {
+      user:challenge.homePlayer,
+      title: "Challenge",
+      message: "challenge has been resolved by an admin"
+    } as Notification)
+    em.persistAndFlush(notification1)
+    // Publish event to the WebSocket server
+    await publish(notification1)
+
+    const notification2: Notification = em.create(Notification, {
+      user:challenge.awayPlayer,
+      title: "Challenge",
+      message: "challenge has been resolved by an admin"
+    } as Notification)
+    em.persistAndFlush(notification2)
+    // Publish event to the WebSocket server
+    await publish(notification2)
+
     //Email notifications
     sendEmail(challenge.homePlayer, 'Challenge resolved', "The challenge has been resolved by an admin", "Go to gamingpills", `https://${CLIENT}/player/feed`)
+    sendEmail(challenge.awayPlayer!, 'Challenge resolved', "The challenge has been resolved by an admin", "Go to gamingpills", `https://${CLIENT}/player/feed`)
 
     return {
       success: true
@@ -330,7 +364,7 @@ export class AdminResolver {
       }
     }
 
-    if(user.banned) {
+    if (user.banned) {
       return {
         errors: [
           { field: "User", message: "user is already banned" }
@@ -342,8 +376,15 @@ export class AdminResolver {
       banned: true
     });
 
-    //Notifications
-    await publish({ userId: user.id, title: "Account banned", message: "Your account has been banned", createdAt: new Date() })
+    const notification: Notification = em.create(Notification, {
+      user: user,
+      title: "Account banned",
+      message: "Your account has been banned"
+    } as Notification)
+    em.persistAndFlush(notification)
+    // Publish event to the WebSocket server
+    await publish(notification)
+
     //Email notifications
     sendEmail(user, 'Account has been banned', "Your account has been banned <br/> You can contact Gamingpills support for more information")
 
@@ -371,7 +412,7 @@ export class AdminResolver {
       }
     }
 
-    if(!user.banned) {
+    if (!user.banned) {
       return {
         errors: [
           { field: "User", message: "user is already not banned" }
@@ -383,8 +424,15 @@ export class AdminResolver {
       banned: false
     });
 
-    //Notifications
-    await publish({ userId: user.id, title: "Account Active", message: "Your account has been activated", createdAt: new Date() })
+    const notification: Notification = em.create(Notification, {
+      user: user,
+      title: "Account Active",
+      message: "Your account has been activated"
+    } as Notification)
+    em.persistAndFlush(notification)
+    // Publish event to the WebSocket server
+    await publish(notification)
+
     //Email notifications
     sendEmail(user, 'Account has been activated', "Your account has been activated again <br/> If you have any other question <br/> you can contact Gamingpills support for more information")
 
@@ -443,7 +491,15 @@ export class AdminResolver {
     await em.persistAndFlush(transaction);
 
     //Notifications
-    await publish({ userId: user!.id, title: "Wallet funded", message: "Your wallet has been funded by gamingpills", createdAt: new Date() })
+    const notification: Notification = em.create(Notification, {
+      user: user,
+      title: "Wallet funded",
+      message: "Your wallet has been funded by gamingpills"
+    } as Notification)
+    em.persistAndFlush(notification)
+    // Publish event to the WebSocket server
+    await publish(notification)
+
     //Email notifications
     sendEmail(user, 'Wallet funded', "Your wallet has been funded by gamingpills", "Check wallet", `https://${CLIENT}/player/wallet`)
     return { success: true };

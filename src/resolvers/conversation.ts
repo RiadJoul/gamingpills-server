@@ -66,7 +66,7 @@ export class ConversationResolver {
             await Limiter.consume(req.session.userId);
         } catch (error) {
             return {
-                errors: [{ field: "content", message: "You are sending messages too quickly. Please wait and try again." }],
+                errors: [{ field: "content", message: "You are sending messages too quickly. Please avoid spamming." }],
             };
         }
 

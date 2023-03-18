@@ -25,7 +25,7 @@ import { calculateProfit } from "../utils/fee";
 import { Authorization } from "../middelware/Authorization";
 import { Transaction } from "../entities/Transaction";
 import { EmailVerified } from "../middelware/EmailVerified";
-import { Notification } from "../types/Notification";
+import { Notification } from "../entities/Notification";
 import { Game } from "../entities/Game";
 import { GameMode } from "../entities/GameMode";
 import { sendEmail } from "../utils/EmailSender";
@@ -123,10 +123,18 @@ export class ChallengeResolver {
     await em.persistAndFlush(challenge);
 
     if (awayPlayer) {
-      //Notification
-      await publish({ userId: awayPlayer.id, title: "Challenge", "message": `${homePlayer!.username} has challenged you for a ${challenge.bet}$ game in ${challenge.game.name}`,createdAt:new Date() })
+      //Notifications
+      const notification: Notification = em.create(Notification, {
+        user: awayPlayer,
+        title: "Challenge",
+        message: `${homePlayer!.username} has challenged you for a ${challenge.bet}$ game in ${challenge.game.name}`
+      } as Notification)
+      em.persistAndFlush(notification)
+      // Publish event to the WebSocket server
+      await publish(notification)
+
       //Email Notification
-      await sendEmail(awayPlayer,`${homePlayer!.username} invited you`,`${homePlayer!.username} has invited you for a ${game?.name} challenge for $${challenge.bet} <br/> Do you have what it takes?`,"Go to gamingpills",`https://${CLIENT}/player/feed`)
+      await sendEmail(awayPlayer, `${homePlayer!.username} invited you`, `${homePlayer!.username} has invited you for a ${game?.name} challenge for $${challenge.bet} <br/> Do you have what it takes?`, "Go to gamingpills", `https://${CLIENT}/player/feed`)
     }
 
     return { success: true };
@@ -212,17 +220,24 @@ export class ChallengeResolver {
     const conversation = em.create(Conversation, {
       id: id,
       public: false,
-      members: [challenge.homePlayer,challenge.awayPlayer!]
+      members: [challenge.homePlayer, challenge.awayPlayer!]
     });
     await em.populate(conversation, ['members']);
     em.persistAndFlush(conversation)
 
-    console.log(conversation)
 
-    //Notification
-    await publish({userId:challenge.homePlayer.id,title:"Challenge Accepted","message":`${user!.username} has accepted you challenge`,createdAt:new Date()})
+    //Notifications
+    const notification: Notification = em.create(Notification, {
+      user: challenge.homePlayer,
+      title: "Challenge Accepted",
+      message: `${user!.username} has accepted you challenge`
+    } as Notification)
+    em.persistAndFlush(notification)
+    // Publish event to the WebSocket server
+    await publish(notification)
+
     //send Email
-    await sendEmail(challenge.homePlayer,`Challenge accepted`,`${challenge.awayPlayer!.username} has accepted your challenge for $${challenge.bet}`,"Go to gamingpills",`https://${CLIENT}/game/lobby/${challenge.id}`)
+    await sendEmail(challenge.homePlayer, `Challenge accepted`, `${challenge.awayPlayer!.username} has accepted your challenge for $${challenge.bet}`, "Go to gamingpills", `https://${CLIENT}/game/lobby/${challenge.id}`)
     return { success: true };
   }
 
@@ -256,7 +271,7 @@ export class ChallengeResolver {
 
   @Mutation(() => GeneralResponse)
   @UseMiddleware(Authentication)
-  
+
   async uploadResults(
     @Arg("id") id: string,
     @Arg("homeScore") homeScore: number,
@@ -272,7 +287,6 @@ export class ChallengeResolver {
         { awayPlayer: req.session.userId },
       ],
     });
-    console.log(challenge)
     if (!challenge || challenge.status != ChallengeStatus.ACTIVE)
       return {
         errors: [
@@ -286,8 +300,8 @@ export class ChallengeResolver {
 
     //check if it been 10 minutes since started
     const date = new Date();
-    date.setMinutes(date.getMinutes() - 10 );
-    if(challenge.updatedAt > date) {
+    date.setMinutes(date.getMinutes() - 10);
+    if (challenge.updatedAt > date) {
       return {
         errors: [
           {
@@ -320,12 +334,22 @@ export class ChallengeResolver {
       homeScore: homeScore,
       awayScore: awayScore,
     } as Scores);
-    
+
     await em.persistAndFlush(score);
 
     //send notification to opponent
     const whoToNotify = user == challenge.homePlayer ? challenge.awayPlayer : challenge.homePlayer;
-    await publish({userId:whoToNotify?.id,title:"Score Uploaded",message:"Your opponent has uploaded the results",createdAt:new Date()})
+
+    //Notifications
+    const notification: Notification = em.create(Notification, {
+      user: whoToNotify,
+      title: "Score Uploaded",
+      message: "Your opponent has uploaded the results"
+    } as Notification)
+    em.persistAndFlush(notification)
+    // Publish event to the WebSocket server
+    await publish(notification)
+
     return { success: true };
   }
 
@@ -411,8 +435,15 @@ export class ChallengeResolver {
     } as Transaction);
     await em.persistAndFlush(transaction);
 
-    //Notification
-    await publish({userId:challenge.homePlayer.id,title:"Invite rejected",message:`${challenge.awayPlayer!.username} has rejected your challenge`,createdAt:new Date()})
+    //Notifications
+    const notification: Notification = em.create(Notification, {
+      user: challenge.homePlayer,
+      title: "Invite rejected",
+      message: `${challenge.awayPlayer!.username} has rejected your challenge`
+    } as Notification)
+    em.persistAndFlush(notification)
+    // Publish event to the WebSocket server
+    await publish(notification)
 
     return { success: true };
   }
@@ -579,21 +610,52 @@ export class ChallengeResolver {
         } as Transaction);
         await em.persistAndFlush(transaction);
       }
-      //Notification
-      await publish({userId:challenge.homePlayer.id,title:"Challenge Completed",message:"challenge has been finished",createdAt:new Date()});
-      await publish({userId:challenge.awayPlayer!.id,title:"Challenge Completed",message:"challenge has been finished",createdAt:new Date()});
+      //Notifications
+      const notification1: Notification = em.create(Notification, {
+        user: challenge.homePlayer,
+        title: "Challenge Completed",
+        message: "challenge has been finished"
+      } as Notification)
+      em.persistAndFlush(notification1)
+      // Publish event to the WebSocket server
+      await publish(notification1)
+
+      const notification2: Notification = em.create(Notification, {
+        user: challenge.awayPlayer,
+        title: "Challenge Completed",
+        message: "challenge has been finished"
+      } as Notification)
+      em.persistAndFlush(notification2)
+      // Publish event to the WebSocket server
+      await publish(notification2)
+      
     } else {
       //not accepted so a dispute
       wrap(challenge).assign({
         status: ChallengeStatus.DISPUTED,
       });
       //Notification
-      await publish({userId:challenge.homePlayer.id,title:"Challenge Disputed",message:"challenge has been disputed",createdAt:new Date()});
-      await publish({userId:challenge.awayPlayer!.id,title:"Challenge Disputed",message:"challenge has been disputed",createdAt:new Date()});
+      const notification1: Notification = em.create(Notification, {
+        user: challenge.homePlayer,
+        title: "Challenge Disputed",
+        message: "challenge has been disputed"
+      } as Notification)
+      em.persistAndFlush(notification1)
+      // Publish event to the WebSocket server
+      await publish(notification1)
+
+      const notification2: Notification = em.create(Notification, {
+        user: challenge.awayPlayer,
+        title: "Challenge Disputed",
+        message: "challenge has been disputed"
+      } as Notification)
+      em.persistAndFlush(notification2)
+      // Publish event to the WebSocket server
+      await publish(notification2)
       //send Emails
-      await sendEmail(challenge.homePlayer,`Challenge Disputed`,`Your challenge has been disputed, no worries we will help you resolve it you only have to send us prove along side the challenge id <br/> you can find the challenge id in the lobby`,"Go to lobby",`https://${CLIENT}/game/lobby/${challenge.id}`)
-      await sendEmail(challenge.awayPlayer!,`Challenge Disputed`,`Your challenge has been disputed, no worries we will help you resolve it you only have to send us prove along side the challenge id <br/> you can find the challenge id in the lobby`,"Go to lobby",`https://${CLIENT}/game/lobby/${challenge.id}`)
-      
+      await sendEmail(challenge.homePlayer, `Challenge Disputed`, `Your challenge has been disputed, no worries we will help you resolve it you only have to send us prove along side the challenge id <br/> you can find the challenge id in the lobby`, "Go to lobby", `https://${CLIENT}/game/lobby/${challenge.id}`)
+      await sendEmail(challenge.awayPlayer!, `Challenge Disputed`, `Your challenge has been disputed, no worries we will help you resolve it you only have to send us prove along side the challenge id <br/> you can find the challenge id in the lobby`, "Go to lobby", `https://${CLIENT}/game/lobby/${challenge.id}`)
+
     }
     return { success: true };
   }

@@ -24,6 +24,7 @@ import { AdminResolver } from './resolvers/admin';
 import { challengeScheduler } from './schedulers/challengeScheduler';
 import { User } from './entities/User';
 import { ConversationResolver } from './resolvers/conversation';
+import { NotificationResolver } from './resolvers/notification';
 
 
 const main = async () => {
@@ -63,6 +64,7 @@ const main = async () => {
     resolvers: [
       AdminResolver,
       UserResolver,
+      NotificationResolver,
       ChallengeResolver,
       GameResolver,
       WalletResolver,

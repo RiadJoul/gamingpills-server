@@ -1,7 +1,8 @@
 import { __prod__ } from "./constants";
-import { User } from "./entities/User";
 import { Options } from "@mikro-orm/core";
 import path from "path";
+
+import { User } from "./entities/User";
 import { Challenge } from "./entities/Challenge";
 import { Game } from "./entities/Game";
 import { Wallet } from "./entities/Wallet";
@@ -9,6 +10,7 @@ import { Scores } from "./entities/Scores";
 import { Transaction } from "./entities/Transaction";
 import { Message } from "./entities/Message";
 import { Conversation } from "./entities/Conversation";
+import { Notification } from "./entities/Notification";
 
 const config: Options = {
   allowGlobalContext: true,
@@ -17,7 +19,7 @@ const config: Options = {
     pathTs: path.join(__dirname, "./migrations"),
     glob: "!(*.d).{js,ts}",
   },
-  entities: [User, Challenge, Game, Wallet, Scores, Transaction, Conversation, Message],
+  entities: [User, Notification,Challenge, Game, Wallet, Scores, Transaction, Conversation, Message],
   dbName: process.env.DATABASE_NAME,
   type: "postgresql",
   user: process.env.DATABASE_USER,
