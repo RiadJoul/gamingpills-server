@@ -9,6 +9,8 @@ import { Authorization } from "../middelware/Authorization";
 import { v4 as uuidv4 } from "uuid";
 import { QueryOrder } from "@mikro-orm/core";
 import { Limiter } from "../utils/MessageThrottleService";
+import { Challenge } from "../entities/Challenge";
+import { Status } from "../enums/Challenge";
 
 
 
@@ -78,10 +80,17 @@ export class ConversationResolver {
         //check if the message is for public or a private challenges
         if (id) {
             const conversation = await em.findOne(Conversation, { id: id });
+            const challenge = await em.findOne(Challenge,{id:id,status:Status.ACTIVE});
 
             if (!conversation) {
                 return {
                     errors: [{ field: "Conversation was not found", message: "the challenge you are trying to send a message to does not exist" }],
+                };
+            }
+
+            if(!challenge) {
+                return {
+                    errors: [{ field: "Challenge is not Active", message: "the challenge you are trying to send a message is finished or disputed" }],
                 };
             }
 
@@ -119,7 +128,11 @@ export class ConversationResolver {
     @Query(() => [Message])
     @UseMiddleware(Authentication)
     async publicMessages(@Ctx() { em }: MyContext): Promise<Message[]> {
-        const messages = await em.find(Message, { conversation: null }, { orderBy: [{ createdAt: QueryOrder.ASC }] })
+        const messages = await em.find(Message, 
+        { conversation: null }, 
+        { orderBy: [{ createdAt: QueryOrder.ASC }] ,
+            limit: 30
+        })
 
         return messages;
     }
@@ -131,7 +144,9 @@ export class ConversationResolver {
         @Ctx() { em }: MyContext,
         @Arg('id') id: string
         ): Promise<Message[]> {
-        const messages = await em.find(Message, { conversation: { id:id} }, { orderBy: [{ createdAt: QueryOrder.ASC }] })
+        const messages = await em.find(Message, { conversation: { id:id} }, { orderBy: [{ createdAt: QueryOrder.ASC }] ,
+            limit: 50
+        })
         return messages;
     }
 

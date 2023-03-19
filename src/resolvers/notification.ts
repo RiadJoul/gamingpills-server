@@ -34,7 +34,7 @@ export class NotificationResolver {
 
       @Mutation(() => GeneralResponse)
       async markNotificationAsRead(
-        @Arg("id") id:number,
+        @Arg("id") id:string,
         @Ctx() { em }: MyContext,
       ): Promise<GeneralResponse> {
         const notificationToUpdate = await em.findOne(Notification, { id , isRead:false});
@@ -49,11 +49,17 @@ export class NotificationResolver {
       }
 
       @Query(() => [Notification])
-      async notifications(
-        @Ctx() {em,req}:MyContext
-      ): Promise<Notification[]> {
-        const notifications = await em.find(Notification,{user:{id:req.session.userId}}, { orderBy: [{ createdAt: QueryOrder.DESC }] })
+        async notifications(
+        @Ctx() { em, req }: MyContext,
+        ): Promise<Notification[]> {
+        const notifications = await em.find(Notification, {
+            user: { id: req.session.userId },
+        }, {
+            orderBy: [{ createdAt: QueryOrder.DESC }],
+            limit: 5,
+        });
+
         return notifications;
-      }
+        }
     
 }

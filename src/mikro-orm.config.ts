@@ -19,12 +19,22 @@ const config: Options = {
     pathTs: path.join(__dirname, "./migrations"),
     glob: "!(*.d).{js,ts}",
   },
+  
   entities: [User, Notification,Challenge, Game, Wallet, Scores, Transaction, Conversation, Message],
   dbName: process.env.DATABASE_NAME,
   type: "postgresql",
   user: process.env.DATABASE_USER,
   password:process.env.DATABASE_PASSWORD,
   debug: !__prod__,
+
+  seeder: {
+    path: path.join(__dirname, "dist/seeders"),
+    pathTs: path.join(__dirname, "./seeders"),
+    defaultSeeder: 'DatabaseSeeder', // default seeder class name
+    glob: '!(*.d).{js,ts}', // how to match seeder files (all .js and .ts files, but not .d.ts)
+    emit: 'ts', // seeder generation mode
+    fileName: (className: string) => className, // seeder file naming convention
+  },
 };
 
 export default config;

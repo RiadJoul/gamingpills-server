@@ -49,23 +49,14 @@ export class UserResolver {
 
     //check if someone has that uuid
     do {
-      var uuid1 = uuidv4();
-      var idExists = await em.find(User, { id: uuid1 });
-    } while (idExists.length != 0);
-
-    do {
-      var uuid2 = uuidv4();
-      var idExists = await em.find(User, { id: uuid1 });
-    } while (idExists.length != 0);
-
-    do {
-      var uuid3 = uuidv4();
-      var idExists = await em.find(User, { id: uuid1 });
+      var uuid = uuidv4();
+      var idExists = await em.find(User, { id: uuid });
     } while (idExists.length != 0);
 
     const hashedPassword = await argon2.hash('password1');
+
     const admin = em.create(User, {
-      id: uuid1,
+      id: uuid,
       role: Role.ADMIN,
       username: 'Admin',
       firstName: 'Riad',
@@ -76,49 +67,6 @@ export class UserResolver {
       password: hashedPassword,
     } as any);
     await em.persistAndFlush(admin);
-
-    const user1 = em.create(User, {
-      id: uuid2,
-      role: Role.PLAYER,
-      username: 'user-1',
-      firstName: 'Demo',
-      lastName: 'User',
-      birthDate: "2000-09-06T14:56:15.000Z",
-      psnId: "hamid",
-      email: "riadjoul@gmail.com",
-      emailVerified: true,
-      password: hashedPassword,
-    } as any);
-    await em.persistAndFlush(user1);
-
-    const user2 = em.create(User, {
-      id: uuid3,
-      role: Role.PLAYER,
-      username: 'user-2',
-      firstName: 'Demo',
-      lastName: 'User',
-      psnId: "hamid2",
-      birthDate: "2000-09-06T14:56:15.000Z",
-      email: "joulriad@gmail.com",
-      emailVerified: true,
-      password: hashedPassword,
-    } as any);
-    await em.persistAndFlush(user2);
-
-    //creating a wallet
-    const wallet1 = em.create(Wallet, {
-      user: user1,
-      balance: 10
-    } as Wallet);
-
-    await em.persistAndFlush(wallet1);
-
-    const wallet2 = em.create(Wallet, {
-      user: user2,
-      balance: 10
-    } as Wallet);
-
-    await em.persistAndFlush(wallet2);
 
     req.session.userId = admin.id;
 
@@ -560,7 +508,12 @@ export class UserResolver {
     wrap(user).assign({
       emailVerified: true
     });
+    do {
+      var uuid = uuidv4();
+      var notificationIdExist = await em.findOne(Notification, { id: uuid });
+  } while (notificationIdExist);
     const notification: Notification = em.create(Notification, {
+      id:uuid,
       user: user,
       title: "Email",
       message: "Your email has been verified"

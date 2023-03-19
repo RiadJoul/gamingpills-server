@@ -28,7 +28,7 @@ import { sendEmail } from "../utils/EmailSender";
 import { Players } from "./Responses/Players";
 import { Role } from "../enums/Roles";
 import { Wallets } from "./Responses/Wallets";
-
+import { v4 as uuidv4 } from "uuid";
 
 
 @Resolver()
@@ -219,24 +219,36 @@ export class AdminResolver {
     }
 
     //Notifications
+    do {
+      var uuid1 = uuidv4();
+      var notificationIdExist = await em.findOne(Notification, { id: uuid1 });
+    } while (notificationIdExist);
+
+    do {
+      var uuid2 = uuidv4();
+      var notificationIdExist = await em.findOne(Notification, { id: uuid2 });
+    } while (notificationIdExist);
+    
     const notification1: Notification = em.create(Notification, {
-        user:challenge.homePlayer,
-        title: "Challenge",
-        message: "challenge has been cancelled by an admin"
+      id: uuid1,
+      user: challenge.homePlayer,
+      title: "Challenge",
+      message: "challenge has been cancelled by an admin"
     } as Notification)
     em.persistAndFlush(notification1)
     // Publish event to the WebSocket server
     await publish(notification1)
 
     const notification2: Notification = em.create(Notification, {
-        user:challenge.awayPlayer,
-        title: "Challenge",
-        message: "challenge has been cancelled by an admin"
+      id: uuid2,
+      user: challenge.awayPlayer,
+      title: "Challenge",
+      message: "challenge has been cancelled by an admin"
     } as Notification)
     em.persistAndFlush(notification2)
     // Publish event to the WebSocket server
-    await publish(notification2)  
-    
+    await publish(notification2)
+
 
     //Email notifications
     sendEmail(challenge.homePlayer, 'Challenge cancelled', "The challenge has been cancelled by an admin", "Go to gamingpills", `https://${CLIENT}/player/feed`)
@@ -297,17 +309,27 @@ export class AdminResolver {
     await em.persistAndFlush(transaction);
 
     //Notifications
+    do {
+      var uuid1 = uuidv4();
+      var notificationIdExist = await em.findOne(Notification, { id: uuid1 });
+    } while (notificationIdExist);
     const notification1: Notification = em.create(Notification, {
-      user:challenge.homePlayer,
+      id: uuid1,
+      user: challenge.homePlayer,
       title: "Challenge",
       message: "challenge has been resolved by an admin"
     } as Notification)
     em.persistAndFlush(notification1)
     // Publish event to the WebSocket server
     await publish(notification1)
+    do {
+      var uuid2 = uuidv4();
+      var notificationIdExist = await em.findOne(Notification, { id: uuid2 });
+    } while (notificationIdExist);
 
     const notification2: Notification = em.create(Notification, {
-      user:challenge.awayPlayer,
+      id: uuid2,
+      user: challenge.awayPlayer,
       title: "Challenge",
       message: "challenge has been resolved by an admin"
     } as Notification)
@@ -376,7 +398,13 @@ export class AdminResolver {
       banned: true
     });
 
+    do {
+      var uuid = uuidv4();
+      var notificationIdExist = await em.findOne(Notification, { id: uuid });
+    } while (notificationIdExist);
+
     const notification: Notification = em.create(Notification, {
+      id: uuid,
       user: user,
       title: "Account banned",
       message: "Your account has been banned"
@@ -424,7 +452,13 @@ export class AdminResolver {
       banned: false
     });
 
+    do {
+      var uuid = uuidv4();
+      var notificationIdExist = await em.findOne(Notification, { id: uuid });
+    } while (notificationIdExist);
+
     const notification: Notification = em.create(Notification, {
+      id: uuid,
       user: user,
       title: "Account Active",
       message: "Your account has been activated"
@@ -490,8 +524,14 @@ export class AdminResolver {
     } as any);
     await em.persistAndFlush(transaction);
 
+    do {
+      var uuid = uuidv4();
+      var notificationIdExist = await em.findOne(Notification, { id: uuid });
+    } while (notificationIdExist);
+
     //Notifications
     const notification: Notification = em.create(Notification, {
+      id: uuid,
       user: user,
       title: "Wallet funded",
       message: "Your wallet has been funded by gamingpills"

@@ -5,9 +5,9 @@ import { User } from "./User";
 @ObjectType()
 @Entity()
 export class Notification {
-    @Field()
-    @PrimaryKey()
-    id: number;
+    @Field(() => String)
+    @PrimaryKey({ type: "text", unique: true, autoincrement: false })
+    id: string;
 
     @Field(() => User)
     @ManyToOne(() => User)
