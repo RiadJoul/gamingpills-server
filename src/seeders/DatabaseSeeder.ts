@@ -22,7 +22,7 @@ export class DatabaseSeeder extends Seeder {
     if (!__prod__) {
       new PlayerFactory(em).each(player => {
         player.Wallet = new WalletFactory(em).makeOne();
-      }).make(7);
+      }).make(20);
 
       new GameFactory(em).each(game => {
         game.gameModes = [new GameModeFactory(em).makeOne()];

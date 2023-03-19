@@ -15,7 +15,7 @@ export class PlayerFactory extends Factory<User> {
             id: uuid,
             role: Role.PLAYER,
             avatar: faker.internet.avatar(),
-            username: "user-" + faker.random.numeric(3),
+            username: "user-" + faker.random.numeric(4),
             firstName: faker.name.firstName(),
             lastName: faker.name.lastName(),
             birthDate: faker.date.between("2000-01-01T00:00:00.000Z", "2002-01-01T00:00:00.000Z"),
