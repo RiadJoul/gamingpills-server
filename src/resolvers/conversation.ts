@@ -72,10 +72,7 @@ export class ConversationResolver {
             };
         }
 
-        do {
-            var uuid = uuidv4();
-            var idExists = await em.findOne(Message, { id: uuid });
-        } while (idExists);
+
 
         //check if the message is for public or a private challenges
         if (id) {
@@ -96,7 +93,7 @@ export class ConversationResolver {
 
             //send message to that challenge conversation
             const message: Message = em.create(Message, {
-                id: uuid,
+                id: uuidv4(),
                 conversation: conversation,
                 user: user!,
                 content: content
@@ -109,7 +106,7 @@ export class ConversationResolver {
         } else {
             //send message to public conversation
             const message: Message = em.create(Message, {
-                id: uuid,
+                id: uuidv4(),
                 user: em.getReference(User, req.session.userId),
                 content: content
             } as any)
@@ -129,9 +126,9 @@ export class ConversationResolver {
     @UseMiddleware(Authentication)
     async publicMessages(@Ctx() { em }: MyContext): Promise<Message[]> {
         const messages = await em.find(Message, 
-        { conversation: null }, 
+        { conversation: null },
         { orderBy: [{ createdAt: QueryOrder.ASC }] ,
-            limit: 30
+            limit: 50,populate: ['user'],
         })
 
         return messages;
@@ -145,7 +142,7 @@ export class ConversationResolver {
         @Arg('id') id: string
         ): Promise<Message[]> {
         const messages = await em.find(Message, { conversation: { id:id} }, { orderBy: [{ createdAt: QueryOrder.ASC }] ,
-            limit: 50
+            limit: 100,populate: ['user'],
         })
         return messages;
     }

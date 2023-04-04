@@ -8,6 +8,8 @@ import { Wallet } from "../entities/Wallet";
 import { Transaction } from "../entities/Transaction";
 import { Scores } from "../entities/Scores";
 import { calculateProfit } from "../utils/fee";
+
+//TODO: split schedulers and import them here
   
 export const challengeScheduler = (em:EntityManager<any> & EntityManager<IDatabaseDriver<Connection>>) => {
 
@@ -27,7 +29,7 @@ export const challengeScheduler = (em:EntityManager<any> & EntityManager<IDataba
   });
 
   //scheduled for every 5 minutes
-  schedule.scheduleJob("*/5 * * * *", function() {
+  schedule.scheduleJob("*/10 * * * *", function() {
     //check for active challenges that hasnt been played for 2 hours
     // console.log("CHECK FOR INACTIVE ACTIVE CHALLENGES")
     checkInactiveActiveChallenges(em);
@@ -48,6 +50,7 @@ const checkExpiredChallenges = async (em:EntityManager<any> & EntityManager<IDat
       ]
     })
     if(expiredChallenges.length > 0) {
+      // console.log(expiredChallenges)
         expiredChallenges.forEach(async (challenge:Challenge) => {
             //cancel match
             wrap(challenge).assign({
@@ -55,6 +58,7 @@ const checkExpiredChallenges = async (em:EntityManager<any> & EntityManager<IDat
             });
             //refund bet
             const wallet = await em.findOne(Wallet, { user: challenge.homePlayer.id })
+            console.log(wallet)
             const balance = wallet!.balance;
             wrap(wallet).assign({
               balance: balance + challenge.bet

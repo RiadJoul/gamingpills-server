@@ -41,54 +41,30 @@ const GraphQLUpload = require('graphql-upload/GraphQLUpload.js');
 
 @Resolver()
 export class UserResolver {
-  //TODO: remove this PROD
-  @Mutation(() => GeneralResponse)
-  async seedAdmin(
-    @Ctx() { req, em }: MyContext
-  ): Promise<GeneralResponse> {
 
-    //check if someone has that uuid
-    do {
-      var uuid = uuidv4();
-      var idExists = await em.find(User, { id: uuid });
-    } while (idExists.length != 0);
-
-    const hashedPassword = await argon2.hash('password1');
-
-    const admin = em.create(User, {
-      id: uuid,
-      role: Role.ADMIN,
-      username: 'Admin',
-      firstName: 'Riad',
-      lastName: 'Joul',
-      birthDate: "2000-09-06T14:56:15.000Z",
-      email: "admin@gmail.com",
-      emailVerified: true,
-      password: hashedPassword,
-    } as any);
-    await em.persistAndFlush(admin);
-
-    req.session.userId = admin.id;
-
-    return {
-      success: true,
-    };
-  }
   //Explore Query
   @Query(() => FeedResponse, { nullable: true })
   @UseMiddleware(Authentication)
   async feed(
+    @Arg('skip') skip: number,
+    @Arg('take') take: number,
     @Ctx() { req, em }: MyContext
   ): Promise<FeedResponse> {
     const date = new Date();
-    // last seen is 1 hour
+
     date.setHours(date.getHours() - 1);
     const onlineUsers = await em.find(User, {
       role: Role.PLAYER,
       banned: false,
       lastSeen: { $gte: new Date(date) },
       $ne: { id: req.session.userId },
-    } as any);
+      
+    } as any, {
+      orderBy: { lastSeen: QueryOrder.ASC },
+      limit: 20,
+    });
+
+    const games = await em.find(Game, {});
 
     const myChallenges = await em.find(Challenge, {
       $or: [
@@ -111,19 +87,33 @@ export class UserResolver {
       $and: [
         {
           mode: Mode.OPEN,
-          status: Status.PENDING
+          status: Status.PENDING,
         },
-      ]
-    }, { orderBy: [{ createdAt: QueryOrder.ASC }] });
+        {
+          homePlayer: { $ne: req.session.userId },
+        },
+      ],
+    }, {
+      orderBy: { createdAt: QueryOrder.ASC },
+      offset: skip,
+      limit: take + 1,
+      populate: ['homePlayer'],
+    });
+    
 
-    const games = await em.find(Game, {});
-
+    const hasMore = challenges.length > take;
+    if (hasMore) {
+      challenges.pop();
+    }
 
     return {
       onlineUsers: onlineUsers,
       games: games,
       myChallenges: myChallenges,
-      challenges: challenges
+      challenges: {
+        challenges:challenges,
+        hasMore:hasMore 
+      }
     }
   }
 
@@ -131,6 +121,8 @@ export class UserResolver {
   @Query(() => MatchesResponse, { nullable: true })
   @UseMiddleware(Authentication)
   async matches(
+    @Arg('skip') skip: number,
+    @Arg('take') take: number,
     @Ctx() { req, em }: MyContext
   ): Promise<MatchesResponse> {
     const activeChallenges = await em.find(Challenge, {
@@ -152,11 +144,25 @@ export class UserResolver {
         { homePlayer: req.session.userId },
         { awayPlayer: req.session.userId },
       ],
-    }, { orderBy: [{ createdAt: QueryOrder.DESC }] });
+    }, {
+      orderBy: { createdAt: QueryOrder.DESC },
+      offset: skip,
+      limit: take + 1,
+      populate: ['homePlayer','awayPlayer'],
+    });
+
+    const hasMore = finishedChallenges.length > take;
+    if (hasMore) {
+      finishedChallenges.pop();
+    }
+
     return {
       activeChallenges: activeChallenges,
       invites: invites,
-      finishedChallenges: finishedChallenges
+      finishedChallenges: {
+        challenges:finishedChallenges,
+        hasMore:hasMore
+      }
     }
   }
 

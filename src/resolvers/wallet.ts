@@ -17,17 +17,15 @@ import { Type, Status } from "../enums/Transaction";
 import { Authorization } from "../middelware/Authorization";
 import { sendEmail } from "../utils/EmailSender";
 import { CLIENT } from "../constants";
-
-
+import { PaginatedTransactions } from "./Responses/PaginatedTransactions";
 
 @Resolver()
 export class WalletResolver {
-  
   @UseMiddleware(Authentication)
   @Mutation(() => GeneralResponse)
   async addFunds(
     @Ctx() { req, em }: MyContext,
-    @Arg("amount") amount: number,
+    @Arg("amount") amount: number
   ): Promise<GeneralResponse> {
     const user = await em.findOne(User, { id: req.session.userId });
     const wallet = await em.findOne(Wallet, { user: user });
@@ -45,21 +43,44 @@ export class WalletResolver {
     await em.persistAndFlush(transaction);
     // //Notification
     // await publish({userId:user!.id,title:"Funds",message:"Your funds has been added to your wallet"})
-    sendEmail(user!,"Funds Added",`You have successfully added ${amount} to your gamingpills wallet`,"See Wallet",`${CLIENT}/player/wallet`)
+    sendEmail(
+      user!,
+      "Funds Added",
+      `You have successfully added ${amount} to your gamingpills wallet`,
+      "See Wallet",
+      `${CLIENT}/player/wallet`
+    );
     return { success: true };
   }
 
   @UseMiddleware(Authentication)
-  @Query(() => [Transaction])
-  async transactions(@Ctx() { req, em }: MyContext) {
-    const user = await em.findOne(User, { id: req.session.userId });
-    return await em.find(
-      Transaction,
-      { user: user },
-      { orderBy: [{ createdAt: QueryOrder.DESC }] }
-    );
-  }
+  @Query(() => PaginatedTransactions)
+  async transactions(
+    @Arg("skip") skip: number,
+    @Arg("take") take: number,
+    @Ctx() { req, em }: MyContext
+  ): Promise<PaginatedTransactions> {
 
+  
+    const transactions = await em.find(Transaction,{ user: req.session.userId },
+      {
+        orderBy: { createdAt: QueryOrder.DESC },
+        offset: skip,
+        limit: take + 1,
+      }
+    );
+
+    const hasMore = transactions.length > take;
+    if (hasMore) {
+      transactions.pop();
+    }
+
+
+    return {
+      transactions: transactions,
+      hasMore: hasMore
+    }
+  }
 
   @UseMiddleware(Authentication)
   @UseMiddleware(Authorization)

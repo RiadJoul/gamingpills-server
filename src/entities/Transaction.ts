@@ -18,7 +18,7 @@ export class Transaction {
   @Enum(() => Type)
   type: Type;
 
-  @Field(() => User)
+  @Field(() => User,{nullable:true})
   @ManyToOne(() => User)
   user: User;
 
@@ -30,11 +30,11 @@ export class Transaction {
   @Property({ type: "text" })
   description: string;
 
-  @Field(() => Date)
+  @Field(() => Date,{nullable:true})
   @Property({ type: "date" })
   createdAt: Date = new Date();
 
-  @Field(() => Date)
+  @Field(() => Date,{nullable:true})
   @Property({ type: "date", onUpdate: () => new Date() })
   updatedAt: Date = new Date();
 }

@@ -262,7 +262,7 @@ export class ChallengeResolver {
   ): Promise<Challenge | null> {
     return await em.findOne(Challenge, {
       id: id,
-    });
+    },{populate:["homePlayer","awayPlayer"]});
   }
 
   // GET Authenticated player's disputed games
