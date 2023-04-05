@@ -11,7 +11,7 @@ export class ChallengeFactory extends Factory<Challenge> {
     var uuid = uuidv4();
     return {
         id:uuid,
-        status: Status.FINISHED,
+        status: Status.PENDING,
         mode: Mode.OPEN,
         platform: Platform.PS5,
         bet: 50

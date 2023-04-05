@@ -8,7 +8,7 @@ import { Message } from "./Message";
 @ObjectType()
 @Entity()
 export class User {
-  @Field(() => String)
+  @Field(() => String, { nullable: true })
   @PrimaryKey({ type: "text", unique: true, autoincrement: false })
   id: string;
 

@@ -17,7 +17,7 @@ export class Challenge {
   @Enum(() => Status)
   status: Status;
 
-  @Field(() => Mode)
+  @Field(() => Mode, { nullable: true })
   @Enum(() => Mode)
   mode: Mode;
 
@@ -37,19 +37,19 @@ export class Challenge {
   @Property({ type: "number", nullable: true })
   awayScore?: number;
 
-  @Field(() => Platform)
+  @Field(() => Platform, { nullable: true })
   @Enum(() => Platform)
   platform!: Platform;
 
-  @Field(() => Game)
-  @ManyToOne(() => Game)
+  @Field(() => Game, { nullable: true })
+  @ManyToOne(() => Game, { nullable: true })
   game: Game;
 
-  @Field(() => GameMode)
+  @Field(() => GameMode, { nullable: true })
   @ManyToOne(() => GameMode)
   gameMode: GameMode;
 
-  @Field(() => Number)
+  @Field(() => Number, { nullable: true })
   @Property({ type: "number" })
   bet!: number;
 
@@ -61,11 +61,11 @@ export class Challenge {
   @ManyToOne(() => User, { nullable: true })
   winner?: User;
 
-  @Field(() => Date)
+  @Field(() => Date, { nullable: true })
   @Property({ type: "date" })
   createdAt: Date = new Date();
 
-  @Field(() => Date)
+  @Field(() => Date, { nullable: true })
   @Property({ type: "date", onUpdate: () => new Date() })
   updatedAt: Date = new Date();
 }

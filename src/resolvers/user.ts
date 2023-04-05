@@ -305,15 +305,10 @@ export class UserResolver {
       };
     }
 
-    //check if someone has that uuid
-    do {
-      var uuid = uuidv4();
-      var idExists = await em.find(User, { id: uuid });
-    } while (idExists.length != 0);
 
     const hashedPassword = await argon2.hash(password);
     const user = em.create(User, {
-      id: uuid,
+      id: uuidv4(),
       role: Role.PLAYER,
       username: username,
       firstName: firstName,
@@ -514,12 +509,9 @@ export class UserResolver {
     wrap(user).assign({
       emailVerified: true
     });
-    do {
-      var uuid = uuidv4();
-      var notificationIdExist = await em.findOne(Notification, { id: uuid });
-  } while (notificationIdExist);
+
     const notification: Notification = em.create(Notification, {
-      id:uuid,
+      id:uuidv4(),
       user: user,
       title: "Email",
       message: "Your email has been verified"

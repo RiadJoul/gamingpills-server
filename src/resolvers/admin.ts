@@ -17,18 +17,19 @@ import { Status } from "../enums/Challenge";
 import { CLIENT, PLATFROM_FEE } from "../constants";
 import { ManageChallengesResponse } from "./Responses/ManageChallengesResponse";
 import { GeneralResponse } from "./Responses/General/GeneralResponse";
-import { wrap } from "@mikro-orm/core";
+import { QueryOrder, wrap } from "@mikro-orm/core";
 import { Wallet } from "../entities/Wallet";
 import { Transaction } from "../entities/Transaction";
-import { Status as TransactionStatus, Type } from "../enums/Transaction";
+import { Status as TransactionStatus, Type} from "../enums/Transaction";
 import { User } from "../entities/User";
 import { calculateProfit } from "../utils/fee";
 import { Notification } from "../entities/Notification";
 import { sendEmail } from "../utils/EmailSender";
-import { Players } from "./Responses/Players";
+import { ManagePlayersResponse, Players } from "./Responses/ManagePlayersResponse";
 import { Role } from "../enums/Roles";
 import { Wallets } from "./Responses/Wallets";
 import { v4 as uuidv4 } from "uuid";
+
 
 
 @Resolver()
@@ -57,6 +58,7 @@ export class AdminResolver {
 
     //all time
     const allTimeBets = await em.createQueryBuilder(Challenge, 'c')
+      .where({ status: Status.FINISHED})
       .select(['SUM(c.bet)'])
       .execute();
 
@@ -98,6 +100,7 @@ export class AdminResolver {
     //total deposit
     const totalDeposit = await em.createQueryBuilder(Transaction, 't')
       .where({ status: TransactionStatus.COMPLETED })
+      .where({ type: Type.POSITIVE})
       .where({ description: "PAYPAL" })
       .select(['SUM(t.amount)'])
       .execute();
@@ -131,23 +134,61 @@ export class AdminResolver {
   @UseMiddleware(Authentication)
   @UseMiddleware(Admin)
   async challenges(@Ctx() { em }: MyContext): Promise<ManageChallengesResponse> {
-    //TODO: pagination with limit
     const activeChallenges = await em.find(Challenge, {
       status: Status.ACTIVE
+    },{
+      populate:["homePlayer","awayPlayer"],
+      limit: 10,
+      orderBy: { createdAt: QueryOrder.ASC },
     })
 
     const disputedChallenges = await em.find(Challenge, {
       status: Status.DISPUTED
+    },{
+      populate:["homePlayer","awayPlayer"],
+      orderBy: { createdAt: QueryOrder.DESC },
+    })
+
+    const pendingChallenges = await em.find(Challenge, {
+      status: Status.PENDING
+    },{
+      populate:["homePlayer","awayPlayer"],
+      limit: 10,
+      orderBy: { createdAt: QueryOrder.DESC },
     })
 
     const finishedChallenges = await em.find(Challenge, {
+      status: Status.FINISHED
+    },{
+      populate:["homePlayer","awayPlayer"],
+      limit: 10,
+      orderBy: { createdAt: QueryOrder.DESC },
+    })
+    // stats
+    const activeChallengesCount = await em.count(Challenge, {
+      status: Status.ACTIVE
+    })
+
+    const pendingChallengeCount = await em.count(Challenge, {
+      status: Status.PENDING
+    })
+
+    const finishedChallengesCount = await em.count(Challenge, {
       status: Status.FINISHED
     })
 
     return {
       activeChallenges: activeChallenges,
+      pendingChallenges:pendingChallenges,
       disputedChallenges: disputedChallenges,
-      finishedChallenges: finishedChallenges
+      finishedChallenges: finishedChallenges,
+
+      challengesStats: {
+        activeChallenges:activeChallengesCount,
+        pendingChallenges:pendingChallengeCount,
+        disputedChallenges:disputedChallenges.length ? disputedChallenges.length : 0,
+        finishedChallenges:finishedChallengesCount,
+      }
     }
   }
 
@@ -219,18 +260,9 @@ export class AdminResolver {
     }
 
     //Notifications
-    do {
-      var uuid1 = uuidv4();
-      var notificationIdExist = await em.findOne(Notification, { id: uuid1 });
-    } while (notificationIdExist);
-
-    do {
-      var uuid2 = uuidv4();
-      var notificationIdExist = await em.findOne(Notification, { id: uuid2 });
-    } while (notificationIdExist);
     
     const notification1: Notification = em.create(Notification, {
-      id: uuid1,
+      id: uuidv4(),
       user: challenge.homePlayer,
       title: "Challenge",
       message: "challenge has been cancelled by an admin"
@@ -240,7 +272,7 @@ export class AdminResolver {
     await publish(notification1)
 
     const notification2: Notification = em.create(Notification, {
-      id: uuid2,
+      id: uuidv4(),
       user: challenge.awayPlayer,
       title: "Challenge",
       message: "challenge has been cancelled by an admin"
@@ -309,12 +341,8 @@ export class AdminResolver {
     await em.persistAndFlush(transaction);
 
     //Notifications
-    do {
-      var uuid1 = uuidv4();
-      var notificationIdExist = await em.findOne(Notification, { id: uuid1 });
-    } while (notificationIdExist);
     const notification1: Notification = em.create(Notification, {
-      id: uuid1,
+      id: uuidv4(),
       user: challenge.homePlayer,
       title: "Challenge",
       message: "challenge has been resolved by an admin"
@@ -322,13 +350,10 @@ export class AdminResolver {
     em.persistAndFlush(notification1)
     // Publish event to the WebSocket server
     await publish(notification1)
-    do {
-      var uuid2 = uuidv4();
-      var notificationIdExist = await em.findOne(Notification, { id: uuid2 });
-    } while (notificationIdExist);
+
 
     const notification2: Notification = em.create(Notification, {
-      id: uuid2,
+      id: uuidv4(),
       user: challenge.awayPlayer,
       title: "Challenge",
       message: "challenge has been resolved by an admin"
@@ -348,22 +373,58 @@ export class AdminResolver {
   }
 
 
-  @Query(() => Players)
+  @Query(() => ManagePlayersResponse)
   @UseMiddleware(Authentication)
   @UseMiddleware(Admin)
   async players(
-    @Ctx() { em }: MyContext,
-  ): Promise<Players> {
+    @Ctx() { req,em }: MyContext,
+  ): Promise<ManagePlayersResponse> {
     const activePlayers = await em.find(User, { role: Role.PLAYER, banned: false }, {
       populate: ['Wallet'],
+      limit: 15
     });
     const bannedPlayers = await em.find(User, { role: Role.PLAYER, banned: true }, {
       populate: ['Wallet'],
     });
 
+
+    const date = new Date();
+    date.setHours(date.getHours() - 1);
+
+    const onlinePlayers = await em.count(User, {
+      role: Role.PLAYER,
+      banned: false,
+      lastSeen: { $gte: new Date(date) },
+      $ne: { id: req.session.userId },
+    } as any);
+
+    const totalBalances = await em.createQueryBuilder(Wallet, 'w')
+      .select(['SUM(w.balance)'])
+      .execute();
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTotalDeposits = await em.createQueryBuilder(Transaction, 't')
+    .where({ description: "PAYPAL" })
+    .where({ type: Type.POSITIVE})
+    .where('t.created_at >= ?', [today])
+    .select(['SUM(t.amount)'])
+    .execute();
+
+    const bannedPlayersCount = await em.count(User, {
+      role: Role.PLAYER,
+      banned: true
+    })
+
+
     return {
       activePlayers: activePlayers,
-      bannedPlayers: bannedPlayers
+      bannedPlayers: bannedPlayers,
+
+      onlinePlayersCount: onlinePlayers,
+      totalBalances: totalBalances[0].sum ? totalBalances[0].sum : 0,
+      todayTotalDeposits: todayTotalDeposits[0].sum ? todayTotalDeposits[0].sum : 0,
+      bannedPlayersCount: bannedPlayersCount,
     }
   }
 
@@ -398,13 +459,10 @@ export class AdminResolver {
       banned: true
     });
 
-    do {
-      var uuid = uuidv4();
-      var notificationIdExist = await em.findOne(Notification, { id: uuid });
-    } while (notificationIdExist);
+
 
     const notification: Notification = em.create(Notification, {
-      id: uuid,
+      id: uuidv4(),
       user: user,
       title: "Account banned",
       message: "Your account has been banned"
@@ -452,13 +510,10 @@ export class AdminResolver {
       banned: false
     });
 
-    do {
-      var uuid = uuidv4();
-      var notificationIdExist = await em.findOne(Notification, { id: uuid });
-    } while (notificationIdExist);
+
 
     const notification: Notification = em.create(Notification, {
-      id: uuid,
+      id: uuidv4(),
       user: user,
       title: "Account Active",
       message: "Your account has been activated"
@@ -524,14 +579,11 @@ export class AdminResolver {
     } as any);
     await em.persistAndFlush(transaction);
 
-    do {
-      var uuid = uuidv4();
-      var notificationIdExist = await em.findOne(Notification, { id: uuid });
-    } while (notificationIdExist);
+
 
     //Notifications
     const notification: Notification = em.create(Notification, {
-      id: uuid,
+      id: uuidv4(),
       user: user,
       title: "Wallet funded",
       message: "Your wallet has been funded by gamingpills"

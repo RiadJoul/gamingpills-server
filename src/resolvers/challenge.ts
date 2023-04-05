@@ -101,15 +101,12 @@ export class ChallengeResolver {
 
     await em.persistAndFlush(transaction);
 
-    do {
-      var uuid = uuidv4();
-      var idExists = await em.find(Challenge, { id: uuid });
-    } while (idExists.length != 0);
+   
 
 
 
     const challenge: Challenge = em.create(Challenge, {
-      id: uuid,
+      id: uuidv4(),
       status: ChallengeStatus.PENDING,
       mode: input.awayPlayerId ? Mode.CHALLENGE : Mode.OPEN,
       homePlayer: homePlayer,
@@ -123,14 +120,11 @@ export class ChallengeResolver {
     await em.persistAndFlush(challenge);
 
     if (awayPlayer) {
-        do {
-          var uuid = uuidv4();
-          var notificationIdExist = await em.findOne(Notification, { id: uuid });
-      } while (notificationIdExist);
+
 
       //Notifications
       const notification: Notification = em.create(Notification, {
-        id:uuid,
+        id:uuidv4(),
         user: awayPlayer,
         title: "Challenge",
         message: `${homePlayer!.username} has challenged you for a ${challenge.bet}$ game in ${challenge.game.name}`
@@ -231,14 +225,11 @@ export class ChallengeResolver {
     await em.populate(conversation, ['members']);
     em.persistAndFlush(conversation)
 
-    do {
-      var uuid = uuidv4();
-      var notificationIdExist = await em.findOne(Notification, { id: uuid });
-  } while (notificationIdExist);
+
 
     //Notifications
     const notification: Notification = em.create(Notification, {
-      id:uuid,
+      id:uuidv4(),
       user: challenge.homePlayer,
       title: "Challenge Accepted",
       message: `${user!.username} has accepted you challenge`
@@ -351,13 +342,10 @@ export class ChallengeResolver {
     //send notification to opponent
     const whoToNotify = user == challenge.homePlayer ? challenge.awayPlayer : challenge.homePlayer;
 
-    do {
-      var uuid = uuidv4();
-      var notificationIdExist = await em.findOne(Notification, { id: uuid });
-  } while (notificationIdExist);
+
     //Notifications
     const notification: Notification = em.create(Notification, {
-      id:uuid,
+      id:uuidv4(),
       user: whoToNotify,
       title: "Score Uploaded",
       message: "Your opponent has uploaded the results"
@@ -451,14 +439,11 @@ export class ChallengeResolver {
     } as Transaction);
     await em.persistAndFlush(transaction);
 
-    do {
-      var uuid = uuidv4();
-      var notificationIdExist = await em.findOne(Notification, { id: uuid });
-  } while (notificationIdExist);
+
     
     //Notifications
     const notification: Notification = em.create(Notification, {
-      id:uuid,
+      id:uuidv4(),
       user: challenge.homePlayer,
       title: "Invite rejected",
       message: `${challenge.awayPlayer!.username} has rejected your challenge`
@@ -632,19 +617,11 @@ export class ChallengeResolver {
         } as Transaction);
         await em.persistAndFlush(transaction);
       }
-      do {
-        var uuid1 = uuidv4();
-        var notificationIdExist = await em.findOne(Notification, { id: uuid1 });
-      } while (notificationIdExist);
-  
-      do {
-        var uuid2 = uuidv4();
-        var notificationIdExist = await em.findOne(Notification, { id: uuid2 });
-      } while (notificationIdExist);
+
 
       //Notifications
       const notification1: Notification = em.create(Notification, {
-        id:uuid1,
+        id:uuidv4(),
         user: challenge.homePlayer,
         title: "Challenge Completed",
         message: "challenge has been finished"
@@ -654,7 +631,7 @@ export class ChallengeResolver {
       await publish(notification1)
 
       const notification2: Notification = em.create(Notification, {
-        id:uuid2,
+        id:uuidv4(),
         user: challenge.awayPlayer,
         title: "Challenge Completed",
         message: "challenge has been finished"
@@ -670,6 +647,7 @@ export class ChallengeResolver {
       });
       //Notification
       const notification1: Notification = em.create(Notification, {
+        id: uuidv4(),
         user: challenge.homePlayer,
         title: "Challenge Disputed",
         message: "challenge has been disputed"
@@ -679,6 +657,7 @@ export class ChallengeResolver {
       await publish(notification1)
 
       const notification2: Notification = em.create(Notification, {
+        id: uuidv4(),
         user: challenge.awayPlayer,
         title: "Challenge Disputed",
         message: "challenge has been disputed"
