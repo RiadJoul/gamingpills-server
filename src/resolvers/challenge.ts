@@ -534,7 +534,7 @@ export class ChallengeResolver {
           type: Type.POSITIVE,
           user: challenge.homePlayer,
           amount: challenge.bet,
-          description: challenge.game + " tie",
+          description: challenge.game.name + " tie",
         } as Transaction);
         await em.persistAndFlush(firstTransaction);
 

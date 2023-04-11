@@ -100,7 +100,7 @@ export class WalletResolver {
           {
             field: "Paypal Email",
             message:
-              "you do not have a paypal email in your account, Please update it in your account",
+              "you do not have a paypal email, Please add it in your account",
           },
         ],
       };

@@ -64,7 +64,9 @@ export class UserResolver {
       limit: 20,
     });
 
-    const games = await em.find(Game, {});
+    const games = await em.find(Game, {
+      active:true
+    });
 
     const myChallenges = await em.find(Challenge, {
       $or: [

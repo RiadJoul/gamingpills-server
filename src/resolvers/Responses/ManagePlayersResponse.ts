@@ -1,5 +1,6 @@
 import { User } from "../../entities/User";
 import { ObjectType, Field } from "type-graphql";
+import { Transaction } from "../../entities/Transaction";
 
 @ObjectType()
 export class ManagePlayersResponse {
@@ -9,6 +10,9 @@ export class ManagePlayersResponse {
   @Field(() => [User])
   bannedPlayers: User[];
 
+  @Field(() => [Transaction])
+  pendingWithdraws: Transaction[];
+  
   @Field(() => Number)
   onlinePlayersCount: number
 
@@ -16,7 +20,7 @@ export class ManagePlayersResponse {
   totalBalances: number
 
   @Field(() => Number)
-  todayTotalDeposits:number
+  pendingWithdrawsCount:number
 
   @Field(() => Number)
   bannedPlayersCount: number;

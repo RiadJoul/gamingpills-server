@@ -67,23 +67,9 @@ export class DatabaseSeeder extends Seeder {
         });
 
 
-        const nba2k23 = new GameFactory(em).createOne({
-          active: true,
-          category: Category.SPORTS,
-          name: "NBA 2K23",
-          cover: "https://manofmany.com/wp-content/uploads/2022/07/NBA-2K23-Digital-Edition-Cover.png",
-        });
-
-
-        new GameModeFactory(em).createOne({
-          name: "1v1",
-          Game: await nba2k23
-        });
-
         new PlayerFactory(em).each(player => {
           player.Wallet = new WalletFactory(em).makeOne();
-        }).make(20);
-
+        }).make(40);
 
         
       }

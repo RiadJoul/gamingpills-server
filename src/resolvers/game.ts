@@ -25,31 +25,73 @@ export class GameResolver {
   @Mutation(() => GeneralResponse)
   @UseMiddleware(Authentication)
   @UseMiddleware(Admin)
-  async createGame(@Ctx() { em }: MyContext,
+  async createGame(
+    @Ctx() { em }: MyContext,
     @Arg("name") name: string,
+    @Arg("file", () => GraphQLUpload) file: FileUpload,
+    @Arg("gameModeName") gameModeName: string
   ): Promise<GeneralResponse> {
-    const game = em.create(Game, {
-      active: true,
-      category: Category.SPORTS,
-      name: name,
-    } as Game);
-    await em.persistAndFlush(game);
+
+    const { createReadStream, filename } = file;
+
+    var ext = path.extname(filename || '').split('.');
+    const fileType = ext[ext.length - 1];
+    if (fileType != 'gif' && fileType != 'jpeg' && fileType != 'png' && fileType != 'jpg') {
+      return { errors: [{ field: 'Error', message: 'This is not a valid file, please upload a png, jpeg or a gif file' }] }
+    }
+
+    try {
+      const game = em.create(Game, {
+        active: true,
+        category: Category.SPORTS,
+        name: name,
+      } as Game);
+      await em.persistAndFlush(game);
+
+      const gameMode = new GameMode;
+      gameMode.name = gameModeName;
+      gameMode.Game = game;
+      game.gameModes = [gameMode];
+
+      await new Promise(res =>
+        createReadStream()
+          .pipe(createWriteStream(path.join(__dirname, "../public/images/games", game.id.toString())))
+          .on("close", res)
+      );
+
+      wrap(game).assign({
+        cover: SERVER + '/images/games/' + game.id
+      })
+    }
+    catch (err) {
+      return {
+        errors: [{ field: 'Error', message: 'An Error has occured please try again later' }]
+      }
+    }
+
     return { success: true };
   }
 
 
+
   @Query(() => [Game], { nullable: true })
-  async games(@Ctx() { em }: MyContext): Promise<any> {
+  async activeGames(@Ctx() { em }: MyContext): Promise<any> {
+    const games = await em.find(Game, {active:true}, {
+      populate: ['gameModes'],
+    });
+    return games;
+  }
+
+  @Query(() => [Game], { nullable: true })
+  @UseMiddleware(Authentication)
+  @UseMiddleware(Admin)
+  async allGames(@Ctx() { em }: MyContext): Promise<any> {
     const games = await em.find(Game, {}, {
       populate: ['gameModes'],
     });
     return games;
   }
 
-  @Query(() => [GameMode], { nullable: true })
-  async gamesModes(@Ctx() { em }: MyContext): Promise<any> {
-    return await em.find(GameMode, {})
-  }
 
   @Mutation(() => GeneralResponse)
   @UseMiddleware(Authentication)
@@ -58,7 +100,6 @@ export class GameResolver {
     @Arg("gameId") gameId: number,
     @Arg("active") active: boolean,
     @Arg("name") name: string,
-    @Arg("file", () => GraphQLUpload) file: FileUpload,
   ): Promise<GeneralResponse> {
     const game = await em.findOne(Game, { id: gameId });
     if (!game) {
@@ -69,34 +110,13 @@ export class GameResolver {
       }
     }
 
-    const { createReadStream, filename } = file;
-
-    var ext = path.extname(filename || '').split('.');
-    const fileType = ext[ext.length - 1];
-    if (fileType != 'gif' && fileType != 'jpeg' && fileType != 'png' && fileType != 'jpg') {
-      return { errors: [{ field: 'Error', message: 'This is not a valid file, please upload a png, jpeg or a gif file' }] }
-    }
-    
-    try {
-      await new Promise(res =>
-        createReadStream()
-          .pipe(createWriteStream(path.join(__dirname, "../public/images/games", game.id.toString())))
-          .on("close", res)
-      );
-
-
       wrap(game).assign({
         active: active,
         name: name,
-        cover: SERVER + '/images/games/' + game.id
       })
-    }
+    
 
-    catch (err) {
-      return {
-        errors: [{ field: 'Error', message: 'An Error has occured please try again later' }]
-      }
-    }
+
     return { success: true }
 
   }
@@ -131,14 +151,10 @@ export class GameResolver {
       }
     }
 
-    //delete all the game modes related to the game
-    const gameModes = await em.find(GameMode, { Game: game.id });
 
-    gameModes.forEach(async (gameMode: GameMode) => {
-      await em.removeAndFlush(gameMode);
+    wrap(game).assign({
+      active: false,
     })
-
-    await em.removeAndFlush(game)
 
     return { success: true };
   }

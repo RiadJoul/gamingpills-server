@@ -92,9 +92,6 @@ const main = async () => {
         if (!user) {
           throw new Error("Not Authenticated")
         }
-        else {
-          console.log("USER CONNECTED", user!.id)
-        }
       }
     },
     context: async (ctx) => {

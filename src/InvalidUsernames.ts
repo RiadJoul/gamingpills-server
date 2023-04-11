@@ -3,6 +3,7 @@ export const InvalidUsernames = [
   "gamingpillsadmin",
   "admingamingpills",
   "admin",
+  "Admin",
   "user",
   "account",
   "admin",
@@ -11,4 +12,6 @@ export const InvalidUsernames = [
   "administrators",
   "password",
   "moderator",
+  "nigga",
+  "bitch"
 ];
